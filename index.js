@@ -56,6 +56,7 @@ const getSessionToken = (profile, creds, token) => {
 };
 
 const writeCredentials = (creds) => (data) => {
+  delete creds.default;
   creds.default = data;
   writeFileSync(getCredentialsFileName(), ini.stringify(creds))
 };
