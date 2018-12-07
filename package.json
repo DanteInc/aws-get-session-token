@@ -6,7 +6,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/DanteInc/aws-switch-profile.git"
+    "url": "git+https://github.com/DanteInc/aws-get-session-token.git"
   },
   "keywords": [
     "aws",
