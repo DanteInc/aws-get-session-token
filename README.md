@@ -29,6 +29,6 @@ aws_secret_access_key=zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
 mfa_arn=arn:aws:iam::123456789012:mfa/my-user
 ```
 
-Now, when you use invoke the aws-sdk, it defaults to using the session you last started.
+Now, when you invoke the aws-sdk, it defaults to using the session you last started.
 
 Inspired by: [vividbytes/awsmfa](https://github.com/vividbytes/awsmfa) and many others
