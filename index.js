@@ -17,6 +17,11 @@ const argv = require('yargs')
     describe: 'MFA token',
     type: 'string'
   })
+  .option('debug', {
+    alias: 'b',
+    type: 'boolean',
+    default: false,
+  })
   .help()
   .argv;
 
@@ -30,9 +35,9 @@ const readCredentials = () => {
   return ini.parse(readFileSync(credentialsFile, 'utf-8'));
 };
 
-const getSessionToken = (profile, creds, token) => {
+const getSessionToken = (profile, creds, token, debug) => {
   AWS.config.credentials = new AWS.SharedIniFileCredentials({ profile: profile });
-  // AWS.config.logger = process.stdout;
+  AWS.config.logger = debug ? process.stdout : undefined;
 
   const mfaArn = creds[profile].mfa_arn;
 
@@ -44,15 +49,15 @@ const getSessionToken = (profile, creds, token) => {
 
   const STS = new AWS.STS()
   return STS.getSessionToken(params).promise()
-    .then((data) => {
-      const { AccessKeyId, SecretAccessKey, SessionToken, Expiration } = data.Credentials;
-      console.log('Expiration: ', Expiration);
-      return {
-        aws_access_key_id: AccessKeyId,
-        aws_secret_access_key: SecretAccessKey,
-        aws_session_token: SessionToken
-      };
-    });
+      .then((data) => {
+        const { AccessKeyId, SecretAccessKey, SessionToken, Expiration } = data.Credentials;
+        console.log('Expiration: ', Expiration);
+        return {
+          aws_access_key_id: AccessKeyId,
+          aws_secret_access_key: SecretAccessKey,
+          aws_session_token: SessionToken
+        };
+      });
 };
 
 const writeCredentials = (creds) => (data) => {
@@ -64,13 +69,13 @@ const writeCredentials = (creds) => (data) => {
 const run = (argv) => {
   console.log('args: %j', argv);
 
-  const { profile, token } = argv;
+  const { profile, token, debug } = argv;
 
   const creds = readCredentials();
 
   return (
     token ?
-      getSessionToken(profile, creds, token) :
+      getSessionToken(profile, creds, token, debug) :
       Promise.resolve(creds[profile])
   )
     .then(writeCredentials(creds));
