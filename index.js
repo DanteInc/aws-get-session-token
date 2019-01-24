@@ -46,15 +46,20 @@ const getSessionToken = (profile, creds, token, duration, debug) => {
   AWS.config.logger = debug ? process.stdout : undefined;
 
   const mfaArn = creds[profile].mfa_arn;
+  const roleArn = creds[profile].role_arn;
 
-  const params = {
+  const params = JSON.parse(JSON.stringify({
+    RoleArn: roleArn,
+    RoleSessionName: roleArn ? 'aws-get-session-token-cli' : undefined,
     DurationSeconds: duration,
     SerialNumber: mfaArn,
     TokenCode: token,
-  };
+  }));
 
   const STS = new AWS.STS()
-  return STS.getSessionToken(params).promise()
+  return roleArn ?
+    STS.assumeRole(params).promise() :
+    STS.getSessionToken(params).promise()
       .then((data) => {
         const { AccessKeyId, SecretAccessKey, SessionToken, Expiration } = data.Credentials;
         console.log('Expiration: ', Expiration);

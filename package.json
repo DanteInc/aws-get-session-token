@@ -1,7 +1,7 @@
 {
   "name": "aws-get-session-token",
-  "version": "1.0.2",
-  "description": "CLI for accessing AWS with MFA and/or switching profiles",
+  "version": "1.0.3",
+  "description": "CLI for switching AWS profiles and creating temporary credientials with MFA and/or assuming a role",
   "author": "John Gilbert <john.gilbert@danteinc.com> (danteinc.com)",
   "license": "MIT",
   "repository": {
@@ -15,6 +15,7 @@
     "mfa",
     "2-factor",
     "multi-factor",
+    "assume-role",
     "authentication"
   ],
   "bin": {
