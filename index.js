@@ -17,6 +17,12 @@ const argv = require('yargs')
     describe: 'MFA token',
     type: 'string'
   })
+  .option('duration', {
+    alias: 'd',
+    describe: 'Session length (12 hour default)',
+    type: 'number',
+    default: 43200, // 12 hours
+  })
   .option('debug', {
     alias: 'b',
     type: 'boolean',
@@ -35,14 +41,14 @@ const readCredentials = () => {
   return ini.parse(readFileSync(credentialsFile, 'utf-8'));
 };
 
-const getSessionToken = (profile, creds, token, debug) => {
+const getSessionToken = (profile, creds, token, duration, debug) => {
   AWS.config.credentials = new AWS.SharedIniFileCredentials({ profile: profile });
   AWS.config.logger = debug ? process.stdout : undefined;
 
   const mfaArn = creds[profile].mfa_arn;
 
   const params = {
-    DurationSeconds: 43200, // 12 hours
+    DurationSeconds: duration,
     SerialNumber: mfaArn,
     TokenCode: token,
   };
@@ -69,13 +75,13 @@ const writeCredentials = (creds) => (data) => {
 const run = (argv) => {
   console.log('args: %j', argv);
 
-  const { profile, token, debug } = argv;
+  const { profile, token, duration, debug } = argv;
 
   const creds = readCredentials();
 
   return (
     token ?
-      getSessionToken(profile, creds, token, debug) :
+      getSessionToken(profile, creds, token, duration, debug) :
       Promise.resolve(creds[profile])
   )
     .then(writeCredentials(creds));
