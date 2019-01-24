@@ -17,6 +17,17 @@ const argv = require('yargs')
     describe: 'MFA token',
     type: 'string'
   })
+  .option('duration', {
+    alias: 'd',
+    describe: 'Session length (12 hour default)',
+    type: 'number',
+    default: 43200, // 12 hours
+  })
+  .option('debug', {
+    alias: 'b',
+    type: 'boolean',
+    default: false,
+  })
   .help()
   .argv;
 
@@ -30,29 +41,34 @@ const readCredentials = () => {
   return ini.parse(readFileSync(credentialsFile, 'utf-8'));
 };
 
-const getSessionToken = (profile, creds, token) => {
+const getSessionToken = (profile, creds, token, duration, debug) => {
   AWS.config.credentials = new AWS.SharedIniFileCredentials({ profile: profile });
-  // AWS.config.logger = process.stdout;
+  AWS.config.logger = debug ? process.stdout : undefined;
 
   const mfaArn = creds[profile].mfa_arn;
+  const roleArn = creds[profile].role_arn;
 
-  const params = {
-    DurationSeconds: 43200, // 12 hours
+  const params = JSON.parse(JSON.stringify({
+    RoleArn: roleArn,
+    RoleSessionName: roleArn ? 'aws-get-session-token-cli' : undefined,
+    DurationSeconds: duration,
     SerialNumber: mfaArn,
     TokenCode: token,
-  };
+  }));
 
   const STS = new AWS.STS()
-  return STS.getSessionToken(params).promise()
-    .then((data) => {
-      const { AccessKeyId, SecretAccessKey, SessionToken, Expiration } = data.Credentials;
-      console.log('Expiration: ', Expiration);
-      return {
-        aws_access_key_id: AccessKeyId,
-        aws_secret_access_key: SecretAccessKey,
-        aws_session_token: SessionToken
-      };
-    });
+  return roleArn ?
+    STS.assumeRole(params).promise() :
+    STS.getSessionToken(params).promise()
+      .then((data) => {
+        const { AccessKeyId, SecretAccessKey, SessionToken, Expiration } = data.Credentials;
+        console.log('Expiration: ', Expiration);
+        return {
+          aws_access_key_id: AccessKeyId,
+          aws_secret_access_key: SecretAccessKey,
+          aws_session_token: SessionToken
+        };
+      });
 };
 
 const writeCredentials = (creds) => (data) => {
@@ -64,13 +80,13 @@ const writeCredentials = (creds) => (data) => {
 const run = (argv) => {
   console.log('args: %j', argv);
 
-  const { profile, token } = argv;
+  const { profile, token, duration, debug } = argv;
 
   const creds = readCredentials();
 
   return (
     token ?
-      getSessionToken(profile, creds, token) :
+      getSessionToken(profile, creds, token, duration, debug) :
       Promise.resolve(creds[profile])
   )
     .then(writeCredentials(creds));
